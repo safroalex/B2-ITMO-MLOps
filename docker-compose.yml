@@ -1,0 +1,222 @@
+
+# =============================================================================
+# ClearML — полная инфраструктура проекта
+#
+# Профили (profiles):
+#   (без профиля) — ClearML Server: Web UI, API, File Server
+#   serving        — ClearML Serving: inference endpoint на порту 8082
+#
+# Использование:
+#   docker compose up -d                        # только ClearML Server
+#   docker compose --profile serving up -d      # Server + Serving
+#
+# Порты:
+#   8080  — Web UI    (http://localhost:8080)
+#   8008  — API       (http://localhost:8008)
+#   8081  — Files     (http://localhost:8081)
+#   8082  — Serving   (http://localhost:8082/serve/sentiment)
+#
+# Credentials: скопируй .env.example → .env и заполни после регистрации в UI.
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # ClearML Server
+  # ---------------------------------------------------------------------------
+
+  apiserver:
+    image: clearml/server:latest
+    command: apiserver
+    container_name: clearml-apiserver
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - mongo
+      - elasticsearch
+      - fileserver
+    environment:
+      CLEARML_ELASTIC_SERVICE_HOST: elasticsearch
+      CLEARML_ELASTIC_SERVICE_PORT: 9200
+      CLEARML_MONGODB_SERVICE_HOST: mongo
+      CLEARML_MONGODB_SERVICE_PORT: 27017
+      CLEARML_REDIS_SERVICE_HOST: redis
+      CLEARML_REDIS_SERVICE_PORT: 6379
+      CLEARML_SERVER_DEPLOYMENT_TYPE: linux
+      CLEARML__apiserver__pre_populate__enabled: "true"
+      CLEARML__services__async_urls_delete__enabled: "true"
+    ports:
+      - "8008:8008"
+    volumes:
+      - clearml_logs:/var/log/clearml
+      - clearml_config:/opt/clearml/config
+      - clearml_fileserver:/mnt/fileserver
+    networks:
+      - backend
+      - frontend
+
+  fileserver:
+    image: clearml/server:latest
+    command: fileserver
+    container_name: clearml-fileserver
+    restart: unless-stopped
+    environment:
+      CLEARML__fileserver__delete__allow_batch: "true"
+    ports:
+      - "8081:8081"
+    volumes:
+      - clearml_logs:/var/log/clearml
+      - clearml_config:/opt/clearml/config
+      - clearml_fileserver:/mnt/fileserver
+    networks:
+      - backend
+      - frontend
+
+  webserver:
+    image: clearml/server:latest
+    command: webserver
+    container_name: clearml-webserver
+    restart: unless-stopped
+    depends_on:
+      - apiserver
+    ports:
+      - "8080:80"
+    networks:
+      - backend
+      - frontend
+
+  async_delete:
+    image: clearml/server:latest
+    container_name: clearml-async-delete
+    restart: unless-stopped
+    depends_on:
+      - apiserver
+      - redis
+      - mongo
+      - elasticsearch
+      - fileserver
+    environment:
+      CLEARML_ELASTIC_SERVICE_HOST: elasticsearch
+      CLEARML_ELASTIC_SERVICE_PORT: 9200
+      CLEARML_MONGODB_SERVICE_HOST: mongo
+      CLEARML_MONGODB_SERVICE_PORT: 27017
+      CLEARML_REDIS_SERVICE_HOST: redis
+      CLEARML_REDIS_SERVICE_PORT: 6379
+    entrypoint:
+      - python3
+      - -m
+      - jobs.async_urls_delete
+      - --fileserver-host
+      - http://fileserver:8081
+    volumes:
+      - clearml_logs:/var/log/clearml
+      - clearml_config:/opt/clearml/config
+    networks:
+      - backend
+
+  mongo:
+    image: mongo:8.0
+    container_name: clearml-mongo
+    restart: unless-stopped
+    command: --setParameter internalQueryMaxBlockingSortMemoryUsageBytes=196100200
+    volumes:
+      - mongo_db:/data/db
+      - mongo_configdb:/data/configdb
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    container_name: clearml-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  elasticsearch:
+    image: elasticsearch:8.19.9
+    container_name: clearml-elastic
+    restart: unless-stopped
+    environment:
+      - bootstrap.memory_lock=true
+      - cluster.name=clearml
+      - cluster.routing.allocation.node_initial_primaries_recoveries=500
+      - cluster.routing.allocation.disk.watermark.low=500mb
+      - cluster.routing.allocation.disk.watermark.high=500mb
+      - cluster.routing.allocation.disk.watermark.flood_stage=500mb
+      - discovery.type=single-node
+      - http.compression_level=7
+      - node.name=clearml
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    networks:
+      - backend
+
+  # ---------------------------------------------------------------------------
+  # ClearML Serving  (profile: serving)
+  # Запускать только после этапа 3 (модель опубликована в Registry)
+  # docker compose --profile serving up -d
+  # ---------------------------------------------------------------------------
+
+  clearml-serving-inference:
+    profiles: [serving]
+    image: allegroai/clearml-serving-inference:latest
+    container_name: clearml-serving-inference
+    restart: unless-stopped
+    environment:
+      CLEARML_WEB_HOST: "http://host.docker.internal:8080"
+      CLEARML_API_HOST: "http://host.docker.internal:8008"
+      CLEARML_FILES_HOST: "http://host.docker.internal:8081"
+      CLEARML_API_ACCESS_KEY: "${CLEARML_API_ACCESS_KEY}"
+      CLEARML_API_SECRET_KEY: "${CLEARML_API_SECRET_KEY}"
+      CLEARML_SERVING_NUM_PROCESS: "2"
+    ports:
+      - "8082:8080"
+    volumes:
+      - serving_data:/tmp/clearml_serving
+    networks:
+      - frontend
+
+  clearml-serving-controller:
+    profiles: [serving]
+    image: allegroai/clearml-serving-controller:latest
+    container_name: clearml-serving-controller
+    restart: unless-stopped
+    environment:
+      CLEARML_WEB_HOST: "http://host.docker.internal:8080"
+      CLEARML_API_HOST: "http://host.docker.internal:8008"
+      CLEARML_FILES_HOST: "http://host.docker.internal:8081"
+      CLEARML_API_ACCESS_KEY: "${CLEARML_API_ACCESS_KEY}"
+      CLEARML_API_SECRET_KEY: "${CLEARML_API_SECRET_KEY}"
+      CLEARML_SERVING_POLL_FREQ_SEC: "5"
+    depends_on:
+      - clearml-serving-inference
+    networks:
+      - backend
+      - frontend
+
+volumes:
+  clearml_logs:
+  clearml_config:
+  clearml_fileserver:
+  mongo_db:
+  mongo_configdb:
+  redis_data:
+  elastic_data:
+  serving_data:
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge

@@ -1,0 +1,32 @@
+# Все зависимости проекта MLOps-Course
+#
+# Установка:
+#   pip install -r requirements.txt
+#
+# Или только нужные этапы:
+#   Stage 1 (dataset):  clearml datasets
+#   Stage 2 (train):    clearml scikit-learn matplotlib
+#   Stage 3 (registry): clearml
+#   Stage 4 (serving):  clearml-serving
+#   Stage 5 (ui):       streamlit requests
+#   Agent:              clearml-agent
+
+# --- ClearML SDK (все этапы) ---
+clearml
+
+# --- ClearML Agent (ЭТАП 0: для запуска агента) ---
+clearml-agent
+
+# --- ClearML Serving (ЭТАП 4: для деплоя модели) ---
+clearml-serving
+
+# --- ЭТАП 1: загрузка датасета ---
+datasets
+
+# --- ЭТАП 2: обучение модели ---
+scikit-learn
+matplotlib
+
+# --- ЭТАП 5: веб-интерфейс ---
+streamlit
+requests

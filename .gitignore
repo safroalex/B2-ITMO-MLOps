@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ClearML (никогда не коммить credentials!)
+clearml.conf
+.clearml/
+stage1_dataset/data/
+stage4_serving/.env
