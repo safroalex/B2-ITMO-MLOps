@@ -222,3 +222,4 @@ clearml.conf
 .clearml/
 stage1_dataset/data/
 stage4_serving/.env
+data/

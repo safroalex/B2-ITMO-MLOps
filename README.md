@@ -192,8 +192,10 @@ clearml-serving model add \
 ### Шаг 3. Запустить сервер
 
 ```bash
-# Вариант А: локально (рекомендуется)
-CLEARML_SERVING_PORT=8082 clearml-serving serve --service-id <SERVICE_ID>
+# Вариант А: локально через uvicorn (рекомендуется для разработки)
+pip install grpcio uvicorn fastapi
+CLEARML_SERVING_TASK_ID=<SERVICE_ID> CLEARML_BKG_THREAD_REPORT=1 \
+  python -m uvicorn clearml_serving.serving.main:app --host 0.0.0.0 --port 8082
 
 # Вариант Б: через Docker Compose (после заполнения .env)
 docker compose --profile serving up -d

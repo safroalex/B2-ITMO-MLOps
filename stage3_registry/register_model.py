@@ -113,7 +113,7 @@ def register_model(best_task: Task, best_f1: float) -> str:
     if accuracy is not None:
         tags.append(f"accuracy={accuracy:.4f}")
 
-    model.add_tags(tags)
+    model.tags = tags
 
     # Переименовываем модель
     model.name = REGISTRY_MODEL_NAME

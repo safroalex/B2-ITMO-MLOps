@@ -116,7 +116,7 @@ def log_confusion_matrix(task: Task, y_true, y_pred):
         iteration=0,
     )
     plt.close(fig)
-    os.unlink(tmp_path)
+    # Не удаляем файл сразу — report_image загружает асинхронно
 
 
 def main():
@@ -232,14 +232,14 @@ def main():
         auto_delete_file=False,
         iteration=0,
     )
-    output_model.add_tags([
+    output_model.tags = [
         f"f1={f1:.4f}",
         f"accuracy={accuracy:.4f}",
         f"C={hyperparams['C']}",
         f"max_features={hyperparams['max_features']}",
         "sklearn",
         "sentiment",
-    ])
+    ]
 
     # ---- Artifact (дополнительно, для воспроизводимости) ----
     task.upload_artifact(
@@ -251,9 +251,8 @@ def main():
             "output_model_id": output_model.id,
         },
     )
-
-    # Удаляем временный файл
-    os.unlink(model_path)
+    # Не удаляем вручную — ClearML грузит artifact асинхронно,
+    # temp файл почистит ОС
 
     print(f"\nМодель сохранена:")
     print(f"  OutputModel ID: {output_model.id}")

@@ -28,9 +28,19 @@ def download_imdb() -> str:
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    # 5000 train + 1000 test — достаточно для курсового проекта
-    train_samples = list(ds["train"])[:5000]
-    test_samples = list(ds["test"])[:1000]
+    # 5000 train + 1000 test — сбалансированная выборка (50% pos / 50% neg)
+    # IMDB в HuggingFace отсортирован: сначала все negative, потом все positive.
+    # Поэтому берём по 2500 из каждого класса для train и по 500 для test.
+    all_train = list(ds["train"])
+    all_test = list(ds["test"])
+
+    train_neg = [s for s in all_train if s["label"] == 0][:2500]
+    train_pos = [s for s in all_train if s["label"] == 1][:2500]
+    train_samples = train_neg + train_pos
+
+    test_neg = [s for s in all_test if s["label"] == 0][:500]
+    test_pos = [s for s in all_test if s["label"] == 1][:500]
+    test_samples = test_neg + test_pos
 
     train_path = os.path.join(DATA_DIR, "train.csv")
     test_path = os.path.join(DATA_DIR, "test.csv")
