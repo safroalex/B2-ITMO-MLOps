@@ -11,7 +11,7 @@
 #   docker compose --profile serving up -d      # Server + Serving
 #
 # Порты:
-#   8080  — Web UI    (http://localhost:8080)
+#   8090  — Web UI    (http://localhost:8090)   ← 8080 занят на некоторых серверах
 #   8008  — API       (http://localhost:8008)
 #   8081  — Files     (http://localhost:8081)
 #   8082  — Serving   (http://localhost:8082/serve/sentiment)
@@ -80,7 +80,7 @@ services:
     depends_on:
       - apiserver
     ports:
-      - "8080:80"
+      - "8090:80"
     networks:
       - backend
       - frontend

@@ -11,7 +11,7 @@ SERVER_HOST="${SERVER_HOST:-213.165.34.52}"
 echo "=== 1. Пишем clearml.conf ==="
 cat > ~/clearml.conf << EOF
 api {
-    web_server: http://${SERVER_HOST}:8080
+    web_server: http://${SERVER_HOST}:8090
     api_server: http://${SERVER_HOST}:8008
     files_server: http://${SERVER_HOST}:8081
     credentials {
@@ -60,4 +60,4 @@ echo ""
 echo "Эксперименты поставлены в очередь 'students'."
 echo "Агент их подберёт и выполнит. Логи: /tmp/clearml-agent.log"
 echo ""
-echo "=== Готово! Откройте http://${SERVER_HOST}:8080 ==="
+echo "=== Готово! Откройте http://${SERVER_HOST}:8090 ==="

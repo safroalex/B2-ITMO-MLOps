@@ -39,11 +39,11 @@ pip install -r requirements.txt
 docker compose up -d
 
 # 3. Получить credentials и настроить SDK
-#    → http://localhost:8080 → Settings → Workspace → Create new credentials
+#    → http://localhost:8090 → Settings → Workspace → Create new credentials
 clearml-init
 
 # 4. Создать очередь и запустить агент (в отдельном терминале)
-#    → http://localhost:8080 → Settings → Queues → New Queue → "students"
+#    → http://localhost:8090 → Settings → Queues → New Queue → "students"
 clearml-agent daemon --queue students
 
 # 5. Загрузить датасет
@@ -77,7 +77,7 @@ streamlit run stage5_ui/app.py
 
 | Сервис | URL |
 |--------|-----|
-| ClearML Web UI | http://localhost:8080 |
+| ClearML Web UI | http://localhost:8090 |
 | ClearML API | http://localhost:8008 |
 | ClearML Files | http://localhost:8081 |
 | Serving (inference) | http://localhost:8082 |
@@ -96,7 +96,7 @@ docker compose ps   # убедиться что все сервисы running
 
 ### 2. Получить credentials
 
-1. Открыть http://localhost:8080
+1. Открыть http://localhost:8090
 2. Зарегистрироваться (первый пользователь — admin)
 3. **Settings → Workspace → Create new credentials**
 4. Скопировать `access_key` и `secret_key`
@@ -106,7 +106,7 @@ docker compose ps   # убедиться что все сервисы running
 ```bash
 clearml-init
 # API server URL:   http://localhost:8008
-# Web server URL:   http://localhost:8080
+# Web server URL:   http://localhost:8090
 # Files server URL: http://localhost:8081
 # Access key / Secret key: <из UI>
 ```
